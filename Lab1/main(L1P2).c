@@ -96,7 +96,7 @@ void myTIM2_Init()
 	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
 	 * enable update events, interrupt on overflow only */
 	// Relevant register: TIM2->CR1
-	TIM2_CR2 = 
+	TIM2_CR1 = 0x398;
 	/* Set clock prescaler value */
 	TIM2->PSC = myTIM2_PRESCALER;
 	/* Set auto-reloaded delay */
@@ -104,7 +104,7 @@ void myTIM2_Init()
 
 	/* Update timer registers */
 	// Relevant register: TIM2->EGR
-
+	TIM2_EGR = 0x01;
 	/* Assign TIM2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
 
