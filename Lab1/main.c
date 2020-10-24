@@ -78,13 +78,13 @@ void myGPIOA_Init()
 {
 	/* Enable clock for GPIOA peripheral */
 	// Relevant register: RCC->AHBENR
-	RCC_AHBENR = 0x0200;
+	RCC->AHBENR = 0x0200;
 	/* Configure PA2 as input */
 	// Relevant register: GPIOA->MODER
-	GPIOA_MODER= 0x0;
+	GPIOA->MODER= 0x0;
 	/* Ensure no pull-up/pull-down for PA2 */
 	// Relevant register: GPIOA->PUPDR
-	GPIOA_PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
+	GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
 }
 
 
@@ -92,11 +92,13 @@ void myTIM2_Init()
 {
 	/* Enable clock for TIM2 peripheral */
 	// Relevant register: RCC->APB1ENR
-	RCC_AHB1ENR_TIM2EN;
+	RCC->AHB1ENR= 0x1;
+
 	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
 	 * enable update events, interrupt on overflow only */
 	// Relevant register: TIM2->CR1
-	TIM2_CR1 = 0x398;
+	TIM2->CR1 = 0x398;
+
 	/* Set clock prescaler value */
 	TIM2->PSC = myTIM2_PRESCALER;
 	/* Set auto-reloaded delay */
@@ -105,6 +107,7 @@ void myTIM2_Init()
 	/* Update timer registers */
 	// Relevant register: TIM2->EGR
 	TIM2_EGR = 0x01;
+
 	/* Assign TIM2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
 
@@ -120,13 +123,14 @@ void myEXTI_Init()
 {
 	/* Map EXTI2 line to PA2 */
 	// Relevant register: SYSCFG->EXTICR[0]
-
+	SYSCFG->EXTICR[0] = 0x2000;
 	/* EXTI2 line interrupts: set rising-edge trigger */
 	// Relevant register: EXTI->RTSR
+	EXTI->RTSR=0x4;
 
 	/* Unmask interrupts from EXTI2 line */
 	// Relevant register: EXTI->IMR
-
+	EXTI->IMR= 0x4;
 	/* Assign EXTI2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
 
