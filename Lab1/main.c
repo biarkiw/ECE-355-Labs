@@ -92,7 +92,7 @@ void myTIM2_Init()
 {
 	/* Enable clock for TIM2 peripheral */
 	// Relevant register: RCC->APB1ENR
-	RCC->AHB1ENR= 0x1;
+	RCC->APB1ENR= 0x1;
 
 	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
 	 * enable update events, interrupt on overflow only */
@@ -106,16 +106,17 @@ void myTIM2_Init()
 
 	/* Update timer registers */
 	// Relevant register: TIM2->EGR
-	TIM2_EGR = 0x01;
+	TIM2->EGR = 0x01;
 
 	/* Assign TIM2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
-
+	NVIC_SetPriority(TIM2,uint32_t 0);
 	/* Enable TIM2 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-
+	NVIC_EnableIRQ(TIM2);
 	/* Enable update interrupt generation */
 	// Relevant register: TIM2->DIER
+	TIM2->DIER = 0x1;
 }
 
 
@@ -133,9 +134,10 @@ void myEXTI_Init()
 	EXTI->IMR= 0x4;
 	/* Assign EXTI2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-
+	NVIC_SetPriority(EXTI2_3,uint32_t 0);
 	/* Enable EXTI2 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
+	NVIC_EnableIRQ(EXTI2_3);
 }
 
 
