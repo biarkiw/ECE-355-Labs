@@ -134,10 +134,13 @@ void myEXTI_Init()
 	EXTI->IMR= 0x4;
 	/* Assign EXTI2 interrupt priority = 0 in NVIC */
 	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	NVIC_SetPriority(EXTI2_3,uint32_t 0);
+	NVIC->IP[2] = 0x0;
+	//NVIC_SetPriority(EXTI2_3,uint32_t 0);
+
 	/* Enable EXTI2 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC_EnableIRQ(EXTI2_3);
+	NVIC->ISER[0]=0x1;
+	//NVIC_EnableIRQ(EXTI2_3);
 }
 
 
