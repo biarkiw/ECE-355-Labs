@@ -161,11 +161,12 @@ void TIM2_IRQHandler()
 
 		/* Clear update interrupt flag */
 		// Relevant register: TIM2->SR
-		TIM1->SR &= ~(TIM2_SR_TIF);
+		TIM1->SR &= ~(TIM_SR_UIF);
 
 		/* Restart stopped timer */
 		// Relevant register: TIM2->CR1
-		TIM2->CR1 |= TIM2_CR1_CEN;
+		TIM2->CR1 |= TIM_CR1_CEN;
+
 	}
 }
 
