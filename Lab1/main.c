@@ -63,8 +63,7 @@ int main(int argc, char* argv[]){
 	myTIM2_Init();		/* Initialize timer TIM2 */
 	myEXTI_Init();		/* Initialize EXTI */
 
-	while (1)
-	{
+	while (1){
 		// Nothing is going on here...
 	}
 
@@ -171,9 +170,9 @@ void TIM2_IRQHandler()
 
 
 /* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
-void EXTI2_3_IRQHandler()
-{
+void EXTI2_3_IRQHandler(){
 	// Declare/initialize your local variables here...
+	unsigned int time = 0;
 
 	/* Check if EXTI2 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR2) != 0){
@@ -197,7 +196,8 @@ void EXTI2_3_IRQHandler()
 			//	- Stop timer (TIM2->CR1).
 			TIM2->CR1 ^= TIM_CR1_CEN;
 			//	- Read out count register (TIM2->CNT).
-			unsigned int time = TIM2->CNT;
+			time = TIM2->CNT;
+			trace_printf(time);
 			//	- Calculate signal period and frequency.
 			//	- Print calculated values to the console.
 			//	  NOTE: Function trace_printf does not work
