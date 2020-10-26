@@ -173,6 +173,7 @@ void TIM2_IRQHandler()
 void EXTI2_3_IRQHandler(){
 	// Declare/initialize your local variables here...
 	unsigned int time = 0;
+	unsigned int period = 0;
 
 	/* Check if EXTI2 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR2) != 0){
@@ -196,21 +197,28 @@ void EXTI2_3_IRQHandler(){
 
 			//    Else (this is the second edge):
 		}else if (timTrig == 1){
-			//set flag that timer has been read
-			timTrig = 0;
+
+
 
 			//	- Stop timer (TIM2->CR1).
 			TIM2->CR1 ^= TIM_CR1_CEN;
 			//	- Read out count register (TIM2->CNT).
 			time = TIM2->CNT;
-			time = time/SystemCoreClock;
-			trace_printf("%u"time);
 			//	- Calculate signal period and frequency.
+			time = SystemCoreClock/time;
+			period = (1/time)*(1000000)
+
 			//	- Print calculated values to the console.
+			trace_printf("Frequency: %u Hz \n",time);
+			trace_printf("Period: %u microseconds \n", period);
+
 			//	  NOTE: Function trace_printf does not work
 			//	  with floating-point numbers: you must use
 			//	  "unsigned int" type to print your signal
 			//	  period and frequency.
+
+			//set flag that timer has been read
+			timTrig = 0;
 		}
 		//
 		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).

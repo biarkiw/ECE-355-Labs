@@ -1,0 +1,8 @@
+OpenOCD Setup – “Executable” Box:
+openocd.exe
+
+OpenOCD Setup – “Config options” Box:
+-f board\stm32f0discovery.cfg
+
+GDB Client Setup – “Executable” Box:
+${cross_prefix}gdb${cross_suffix}
