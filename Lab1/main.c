@@ -90,8 +90,7 @@ void myGPIOA_Init()
 }
 
 
-void myTIM2_Init()
-{
+void myTIM2_Init(){
 	/* Enable clock for TIM2 peripheral */
 	// Relevant register: RCC->APB1ENR
 	RCC->APB1ENR= 0x1;
@@ -127,8 +126,7 @@ void myTIM2_Init()
 }
 
 
-void myEXTI_Init()
-{
+void myEXTI_Init(){
 	/* Map EXTI2 line to PA2 */
 	// Relevant register: SYSCFG->EXTICR[0]
 	SYSCFG->EXTICR[0]  &= ~(SYSCFG_EXTICR1_EXTI2);
@@ -163,9 +161,11 @@ void TIM2_IRQHandler()
 
 		/* Clear update interrupt flag */
 		// Relevant register: TIM2->SR
+		TIM1->SR &= ~(TIM2_SR_TIF);
 
 		/* Restart stopped timer */
 		// Relevant register: TIM2->CR1
+		TIM2->CR1 |= TIM2_CR1_CEN;
 	}
 }
 
