@@ -206,7 +206,7 @@ void EXTI2_3_IRQHandler(){
 			time = TIM2->CNT;
 			//	- Calculate signal period and frequency.
 			time = SystemCoreClock/time;
-			period = (1/time)*(1000000)
+			period = (1000000/time);
 
 			//	- Print calculated values to the console.
 			trace_printf("Frequency: %u Hz \n",time);
