@@ -203,8 +203,8 @@ void EXTI2_3_IRQHandler(){
 			TIM2->CR1 ^= TIM_CR1_CEN;
 			//	- Read out count register (TIM2->CNT).
 			time = TIM2->CNT;
-			time = time/48000000;
-			trace_printf(time);
+			time = time/SystemCoreClock;
+			trace_printf("%u"time);
 			//	- Calculate signal period and frequency.
 			//	- Print calculated values to the console.
 			//	  NOTE: Function trace_printf does not work
