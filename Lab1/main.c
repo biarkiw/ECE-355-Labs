@@ -185,6 +185,9 @@ void EXTI2_3_IRQHandler(){
 		// by writing 1 to it.
 		//
 		if(timTrig == 0){
+			//set flag that timer has been trigger
+			timTrig = 1;
+
 			//	- Clear count register (TIM2->CNT).
 			TIM2->CNT =0X00000000;
 
@@ -193,10 +196,14 @@ void EXTI2_3_IRQHandler(){
 
 			//    Else (this is the second edge):
 		}else if (timTrig == 1){
+			//set flag that timer has been read
+			timTrig = 0;
+
 			//	- Stop timer (TIM2->CR1).
 			TIM2->CR1 ^= TIM_CR1_CEN;
 			//	- Read out count register (TIM2->CNT).
 			time = TIM2->CNT;
+			time = time/48000000;
 			trace_printf(time);
 			//	- Calculate signal period and frequency.
 			//	- Print calculated values to the console.
@@ -210,6 +217,7 @@ void EXTI2_3_IRQHandler(){
 		// NOTE: A pending register (PR) bit is cleared
 		// by writing 1 to it.
 		//
+		EXTI->PR = 0xFFFF;
 	}
 }
 
