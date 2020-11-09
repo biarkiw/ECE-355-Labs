@@ -4,6 +4,12 @@
 #include "diag/Trace.h"
 #include "cmsis/cmsis_device.h"
 
+/*
+	To Do
+1.Enable and configure ADC
+2.Enable and configure GPIOC
+3.Enable and configure DAC
+4.Enable and configure GPIOA
 
 // ----- main() ---------------------------------------------------------------
 
@@ -29,15 +35,15 @@ void myCOM_Init(){
 void myGPIOA_Init(){
 	/* Enable clock for GPIOA peripheral */
 	// Relevant register: RCC->AHBENR
-	RCC->AHBENR = 0x0200;
+	//RCC->AHBENR = 0x0200;
 
 	/* Configure PA2 as input */
 	// Relevant register: GPIOA->MODER
-	GPIOA->MODER= 0x0;
+	//GPIOA->MODER= 0x0;
 
 	/* Ensure no pull-up/pull-down for PA2 */
 	// Relevant register: GPIOA->PUPDR
-	GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
+	//GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
 }
 
 void myGPIOB_Init(){
@@ -48,6 +54,21 @@ void myGPIOC_Init(){
 
   //Configure PC1 as analog input
   GPIOC->MODER = 0x03;
+
+}
+
+void myADC_Init() {
+	//calibrate ADC
+	ADC->CR = ADC_CR_ADCAL;
+	trace_printf("Calibrating ADC \n");
+
+	//Wait for calibration to be completed
+	while(ADC->CR & ADC_CR_ADCAL != 0){
+		trace_printf("calibrating... \n");
+	}
+
+	//Enable ADC
+	ADC->CR = ADC_CR_ADEN;
 
 }
 
@@ -199,12 +220,15 @@ int main(int argc, char* argv[]){
 
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
-	myGPIOA_Init();		/* Initialize I/O port PA */
-	myTIM2_Init();		/* Initialize timer TIM2 */
+	myADC_Init();			/*Initialize ADC*/
+	///myGPIOA_Init();		/* Initialize I/O port PA */
+	//myTIM2_Init();		/* Initialize timer TIM2 */
 	myEXTI_Init();		/* Initialize EXTI */
 
 	while (1){
-		// Nothing is going on here...
+		if(ADC->ISR )
+		ADC->CR
+
 	}
 
 	return 0;
