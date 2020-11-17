@@ -60,22 +60,23 @@ void myGPIOC_Init(){
 void myADC_Init() {
 
 	//calibrate ADC
-	ADC->CR = ADC_CR_ADCAL;
+	ADC_CR_ADCAL= 1;
 	trace_printf("Calibrating ADC \n");
 
 	//Wait for calibration to be completed
-	while(ADC->CR & ADC_CR_ADCAL != 0){
+	while(ADC_CR_ADCAL != 0){
 		trace_printf("calibrating... \n");
 	}
 
   //print calibration factor
-  int cal = ADC->DR[15:0];
+  int cal = ADC_DR_DATA;
+  trace_printf("Calibration factor of: %u", cal);
 
   //set clock mode
-  ADC->CFGR2= ADC_CFGR2_CKMODE_0;
+  ADC_CFGR2_CKMODE_0;
 
 	//Enable ADC
-	ADC->CR = ADC_CR_ADEN;
+	ADC_CR_ADEN;
 
   //
 
@@ -169,7 +170,7 @@ void EXTI2_3_IRQHandler(){
 	unsigned int period = 0;
 
 	/* Check if EXTI2 interrupt pending flag is indeed set */
-	if ((EXTI->PR & EXTI_PR_PR2) != 0){
+	/*if ((EXTI->PR & EXTI_PR_PR2) != 0){
 		//
 		// 1. If this is the first edge:
 
@@ -219,7 +220,7 @@ void EXTI2_3_IRQHandler(){
 		// by writing 1 to it.
 		//
 		EXTI->PR = 0xFFFF;
-	}
+	}*/
 }
 
 //Gobal variables
@@ -236,8 +237,8 @@ int main(int argc, char* argv[]){
 	myEXTI_Init();		/* Initialize EXTI */
 
 	while (1){
-		if(ADC->ISR )
-		ADC->CR
+		/*if(ADC->ISR )
+		ADC->CR*/
 
 	}
 
