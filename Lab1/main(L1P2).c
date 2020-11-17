@@ -1,15 +1,31 @@
+//
+// This file is part of the GNU ARM Eclipse distribution.
+// Copyright (c) 2014 Liviu Ionescu.
+//
 
+// ----------------------------------------------------------------------------
+// School: University of Victoria, Canada.
+// Course: ECE 355 "Microprocessor-Based Systems".
+// This is template code for Part 2 of Introductory Lab.
+//
+// See "system/include/cmsis/stm32f0xx.h" for register/bit definitions.
+// See "system/src/cmsis/vectors_stm32f0xx.c" for handler declarations.
+// ----------------------------------------------------------------------------
 
 #include <stdio.h>
 #include "diag/Trace.h"
 #include "cmsis/cmsis_device.h"
 
-/*
-	To Do
-1.Enable and configure ADC
-2.Enable and configure GPIOC
-3.Enable and configure DAC
-4.Enable and configure GPIOA
+// ----------------------------------------------------------------------------
+//
+// STM32F0 empty sample (trace via $(trace)).
+//
+// Trace support is enabled by adding the TRACE macro definition.
+// By default the trace messages are forwarded to the $(trace) output,
+// but can be rerouted to any device or completely suppressed, by
+// changing the definitions required in system/src/diag/trace_impl.c
+// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
+//
 
 // ----- main() ---------------------------------------------------------------
 
@@ -26,61 +42,51 @@
 /* Maximum possible setting for overflow */
 #define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
 
+void myGPIOA_Init(void);
+void myTIM2_Init(void);
+void myEXTI_Init(void);
 
-//Port and peripheral initialization
-void myCOM_Init(){
+
+// Declare/initialize your global variables here...
+// NOTE: You'll need at least one global variable
+// (say, timerTriggered = 0 or 1) to indicate
+// whether TIM2 has started counting or not.
+unsigned char timTrig = 0;
+
+
+int main(int argc, char* argv[]){
+
+	trace_printf("This is Part 2 of Introductory Lab...\n");
+	trace_printf("System clock: %u Hz\n", SystemCoreClock);
+
+	myGPIOA_Init();		/* Initialize I/O port PA */
+	myTIM2_Init();		/* Initialize timer TIM2 */
+	myEXTI_Init();		/* Initialize EXTI */
+
+	while (1){
+		// Nothing is going on here...
+	}
+
+	return 0;
 
 }
 
-void myGPIOA_Init(){
+
+void myGPIOA_Init()
+{
 	/* Enable clock for GPIOA peripheral */
 	// Relevant register: RCC->AHBENR
-	//RCC->AHBENR = 0x0200;
+	RCC->AHBENR = 0x0200;
 
 	/* Configure PA2 as input */
 	// Relevant register: GPIOA->MODER
-	//GPIOA->MODER= 0x0;
+	GPIOA->MODER= 0x0;
 
 	/* Ensure no pull-up/pull-down for PA2 */
 	// Relevant register: GPIOA->PUPDR
-	//GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
+	GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
 }
 
-void myGPIOB_Init(){
-
-}
-
-void myGPIOC_Init(){
-
-  //Configure PC1 as analog input
-  GPIOC->MODER = 0x03;
-
-}
-
-void myADC_Init() {
-
-	//calibrate ADC
-	ADC->CR = ADC_CR_ADCAL;
-	trace_printf("Calibrating ADC \n");
-
-	//Wait for calibration to be completed
-	while(ADC->CR & ADC_CR_ADCAL != 0){
-		trace_printf("calibrating... \n");
-	}
-
-  //print calibration factor
-  int cal = ADC->DR[15:0];
-
-  //set clock mode
-  ADC->CFGR2= ADC_CFGR2_CKMODE_0;
-
-	//Enable ADC
-	ADC->CR = ADC_CR_ADEN;
-
-  //
-
-
-}
 
 void myTIM2_Init(){
 	/* Enable clock for TIM2 peripheral */
@@ -117,6 +123,7 @@ void myTIM2_Init(){
 	TIM2->DIER = 0x1;
 }
 
+
 void myEXTI_Init(){
 	/* Map EXTI2 line to PA2 */
 	// Relevant register: SYSCFG->EXTICR[0]
@@ -141,10 +148,10 @@ void myEXTI_Init(){
 	NVIC_EnableIRQ(EXTI2_3_IRQn);
 }
 
-//Interrupt Handlers
 
 /* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
-void TIM2_IRQHandler(){
+void TIM2_IRQHandler()
+{
 	/* Check if update interrupt flag is indeed set */
 	if ((TIM2->SR & TIM_SR_UIF) != 0)
 	{
@@ -222,28 +229,6 @@ void EXTI2_3_IRQHandler(){
 	}
 }
 
-//Gobal variables
-
-
-
-int main(int argc, char* argv[]){
-
-	trace_printf("System clock: %u Hz\n", SystemCoreClock);
-
-	myADC_Init();			/*Initialize ADC*/
-	///myGPIOA_Init();		/* Initialize I/O port PA */
-	//myTIM2_Init();		/* Initialize timer TIM2 */
-	myEXTI_Init();		/* Initialize EXTI */
-
-	while (1){
-		if(ADC->ISR )
-		ADC->CR
-
-	}
-
-	return 0;
-
-}
 
 #pragma GCC diagnostic pop
 

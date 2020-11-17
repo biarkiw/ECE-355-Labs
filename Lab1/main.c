@@ -6,7 +6,7 @@
 // ----------------------------------------------------------------------------
 // School: University of Victoria, Canada.
 // Course: ECE 355 "Microprocessor-Based Systems".
-// This is template code for Part 2 of Introductory Lab.
+// This is tutorial code for Part 1 of Introductory Lab.
 //
 // See "system/include/cmsis/stm32f0xx.h" for register/bit definitions.
 // See "system/src/cmsis/vectors_stm32f0xx.c" for handler declarations.
@@ -39,32 +39,63 @@
 
 /* Clock prescaler for TIM2 timer: no prescaling */
 #define myTIM2_PRESCALER ((uint16_t)0x0000)
-/* Maximum possible setting for overflow */
-#define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
+/* Delay count for TIM2 timer: 1/4 sec at 48 MHz */
+#define myTIM2_PERIOD ((uint32_t)12000000)
+
 
 void myGPIOA_Init(void);
+void myGPIOC_Init(void);
 void myTIM2_Init(void);
-void myEXTI_Init(void);
 
 
-// Declare/initialize your global variables here...
-// NOTE: You'll need at least one global variable
-// (say, timerTriggered = 0 or 1) to indicate
-// whether TIM2 has started counting or not.
-unsigned char timTrig = 0;
+/* Global variable indicating which LED is blinking */
+volatile uint16_t blinkingLED = ((uint16_t)0x0100);
 
 
-int main(int argc, char* argv[]){
+int
+main(int argc, char* argv[])
+{
 
-	trace_printf("This is Part 2 of Introductory Lab...\n");
+	// By customizing __initialize_args() it is possible to pass arguments,
+	// for example when running tests with semihosting you can pass various
+	// options to the test.
+	// trace_dump_args(argc, argv);
+
+	// Send a greeting to the trace device (skipped on Release).
+	trace_puts("Hello World!");
+
+	// The standard output and the standard error should be forwarded to
+	// the trace device. For this to work, a redirection in _write.c is
+	// required.
+	puts("Standard output message.");
+	fprintf(stderr, "Standard error message.\n");
+
+	// At this stage the system clock should have already been configured
+	// at high speed.
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
-	myGPIOA_Init();		/* Initialize I/O port PA */
-	myTIM2_Init();		/* Initialize timer TIM2 */
-	myEXTI_Init();		/* Initialize EXTI */
 
-	while (1){
-		// Nothing is going on here...
+	myGPIOA_Init();		/* Initialize I/O port PA */
+	myGPIOC_Init();		/* Initialize I/O port PC */
+	myTIM2_Init();		/* Initialize timer TIM2 */
+
+	while (1)
+	{
+		/* If button is pressed, switch between blue and green LEDs */
+		if((GPIOA->IDR & GPIO_IDR_0) != 0)
+		{
+			/* Wait for button to be released (PA0 = 0) */
+			while((GPIOA->IDR & GPIO_IDR_0) != 0){}
+
+			/* Turn off currently blinking LED */
+			GPIOC->BRR = blinkingLED;
+			/* Switch blinking LED */
+			blinkingLED ^= ((uint16_t)0x0300);
+			/* Turn on switched LED */
+			GPIOC->BSRR = blinkingLED;
+
+			trace_printf("\nSwitching the blinking LED...\n");
+		}
 	}
 
 	return 0;
@@ -75,157 +106,86 @@ int main(int argc, char* argv[]){
 void myGPIOA_Init()
 {
 	/* Enable clock for GPIOA peripheral */
-	// Relevant register: RCC->AHBENR
-	RCC->AHBENR = 0x0200;
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
-	/* Configure PA2 as input */
-	// Relevant register: GPIOA->MODER
-	GPIOA->MODER= 0x0;
-
-	/* Ensure no pull-up/pull-down for PA2 */
-	// Relevant register: GPIOA->PUPDR
-	GPIOA->PUPDR = 0x0; //potetnial change to 0x3 if not acting as intetnded
+	/* Configure PA0 as input */
+	GPIOA->MODER &= ~(GPIO_MODER_MODER0);
+	/* Ensure no pull-up/pull-down for PA0 */
+	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR0);
 }
 
 
-void myTIM2_Init(){
+void myGPIOC_Init()
+{
+	/* Enable clock for GPIOC peripheral */
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+
+	/* Configure PC8 and PC9 as outputs */
+	GPIOC->MODER |= (GPIO_MODER_MODER8_0 | GPIO_MODER_MODER9_0);
+	/* Ensure push-pull mode selected for PC8 and PC9 */
+	GPIOC->OTYPER &= ~(GPIO_OTYPER_OT_8 | GPIO_OTYPER_OT_9);
+	/* Ensure high-speed mode for PC8 and PC9 */
+	GPIOC->OSPEEDR |= (GPIO_OSPEEDER_OSPEEDR8 | GPIO_OSPEEDER_OSPEEDR9);
+	/* Ensure no pull-up/pull-down for PC8 and PC9 */
+	GPIOC->PUPDR &= ~(GPIO_PUPDR_PUPDR8 | GPIO_PUPDR_PUPDR9);
+}
+
+
+void myTIM2_Init()
+{
 	/* Enable clock for TIM2 peripheral */
-	// Relevant register: RCC->APB1ENR
-	RCC->APB1ENR= 0x1;
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 
 	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
 	 * enable update events, interrupt on overflow only */
-	// Relevant register: TIM2->CR1
 	TIM2->CR1 = ((uint16_t)0x008C);
 
 	/* Set clock prescaler value */
 	TIM2->PSC = myTIM2_PRESCALER;
-
 	/* Set auto-reloaded delay */
 	TIM2->ARR = myTIM2_PERIOD;
 
 	/* Update timer registers */
-	// Relevant register: TIM2->EGR
-	TIM2->EGR = 0x01;
+	TIM2->EGR = ((uint16_t)0x0001);
 
 	/* Assign TIM2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
-	//NVIC->IP[3]=0x0;
 	NVIC_SetPriority(TIM2_IRQn, 0);
+	// Same as: NVIC->IP[3] = ((uint32_t)0x00FFFFFF);
 
 	/* Enable TIM2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	//NVIC->ISER[0]=0x0;
 	NVIC_EnableIRQ(TIM2_IRQn);
+	// Same as: NVIC->ISER[0] = ((uint32_t)0x00008000) */
 
 	/* Enable update interrupt generation */
-	// Relevant register: TIM2->DIER
-	TIM2->DIER = 0x1;
-}
-
-
-void myEXTI_Init(){
-	/* Map EXTI2 line to PA2 */
-	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR[0]  &= ~(SYSCFG_EXTICR1_EXTI2);
-
-	/* EXTI2 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	EXTI->RTSR=0x4;
-
-	/* Unmask interrupts from EXTI2 line */
-	// Relevant register: EXTI->IMR
-	EXTI->IMR= 0x4;
-
-	/* Assign EXTI2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	//NVIC->IP[2] = 0x0;
-	NVIC_SetPriority(EXTI2_3_IRQn, 0);
-
-	/* Enable EXTI2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC->ISER[0]=0x1;
-	NVIC_EnableIRQ(EXTI2_3_IRQn);
+	TIM2->DIER |= TIM_DIER_UIE;
+	/* Start counting timer pulses */
+	TIM2->CR1 |= TIM_CR1_CEN;
 }
 
 
 /* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
 void TIM2_IRQHandler()
 {
+	uint16_t LEDstate;
+
 	/* Check if update interrupt flag is indeed set */
 	if ((TIM2->SR & TIM_SR_UIF) != 0)
 	{
-		trace_printf("\n*** Overflow! ***\n");
-
-		/* Clear update interrupt flag */
-		// Relevant register: TIM2->SR
-		TIM1->SR &= ~(TIM_SR_UIF);
-
-		/* Restart stopped timer */
-		// Relevant register: TIM2->CR1
-		TIM2->CR1 |= TIM_CR1_CEN;
-
-	}
-}
-
-
-/* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
-void EXTI2_3_IRQHandler(){
-	// Declare/initialize your local variables here...
-	unsigned int time = 0;
-	unsigned int period = 0;
-
-	/* Check if EXTI2 interrupt pending flag is indeed set */
-	if ((EXTI->PR & EXTI_PR_PR2) != 0){
-		//
-		// 1. If this is the first edge:
-
-		//
-		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		// NOTE: A pending register (PR) bit is cleared
-		// by writing 1 to it.
-		//
-		if(timTrig == 0){
-			//set flag that timer has been trigger
-			timTrig = 1;
-
-			//	- Clear count register (TIM2->CNT).
-			TIM2->CNT =0X00000000;
-
-			//	- Start timer (TIM2->CR1).
-			TIM2->CR1 |= TIM_CR1_CEN;
-
-			//    Else (this is the second edge):
-		}else if (timTrig == 1){
-
-
-
-			//	- Stop timer (TIM2->CR1).
-			TIM2->CR1 ^= TIM_CR1_CEN;
-			//	- Read out count register (TIM2->CNT).
-			time = TIM2->CNT;
-			//	- Calculate signal period and frequency.
-			time = SystemCoreClock/time;
-			period = (1000000/time);
-
-			//	- Print calculated values to the console.
-			trace_printf("Frequency: %u Hz \n",time);
-			trace_printf("Period: %u microseconds \n", period);
-
-			//	  NOTE: Function trace_printf does not work
-			//	  with floating-point numbers: you must use
-			//	  "unsigned int" type to print your signal
-			//	  period and frequency.
-
-			//set flag that timer has been read
-			timTrig = 0;
+		/* Read current PC output and isolate PC8 and PC9 bits */
+		LEDstate = GPIOC->ODR & ((uint16_t)0x0300);
+		if (LEDstate == 0)	/* If LED is off, turn it on... */
+		{
+			/* Set PC8 or PC9 bit */
+			GPIOC->BSRR = blinkingLED;
 		}
-		//
-		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		// NOTE: A pending register (PR) bit is cleared
-		// by writing 1 to it.
-		//
-		EXTI->PR = 0xFFFF;
+		else			/* ...else (LED is on), turn it off */
+		{
+			/* Reset PC8 or PC9 bit */
+			GPIOC->BRR = blinkingLED;
+		}
+
+		TIM2->SR &= ~(TIM_SR_UIF);	/* Clear update interrupt flag */
+		TIM2->CR1 |= TIM_CR1_CEN;	/* Restart stopped timer */
 	}
 }
 
@@ -233,3 +193,4 @@ void EXTI2_3_IRQHandler(){
 #pragma GCC diagnostic pop
 
 // ----------------------------------------------------------------------------
+

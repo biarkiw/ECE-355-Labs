@@ -6,3 +6,8 @@ OpenOCD Setup – “Config options” Box:
 
 GDB Client Setup – “Executable” Box:
 ${cross_prefix}gdb${cross_suffix}
+
+
+Old Default
+${openocd_path}/${openocd_executable}
+C:\Ac6\openocd\bin/openocd.exe
