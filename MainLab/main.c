@@ -6,10 +6,19 @@
 
 /*
 	To Do
+
 1.Enable and configure ADC
 2.Enable and configure GPIOC
 3.Enable and configure DAC
 4.Enable and configure GPIOA
+
+// GPIOC Periph clock enable
+// ADC1 Periph clock enable
+// Configure ADC Channel11 as analog input
+// Configure the ADC1 in continuous mode, Overrun mode, right data alignment with a resolution equal to 12 bits
+// Select Channel 11 and Convert it with 239.5 Cycles as sampling time
+// Enable the ADC peripheral
+// Wait the ADRDY flag
 
 // ----- main() ---------------------------------------------------------------
 
@@ -22,12 +31,25 @@
 
 
 /* Clock prescaler for TIM2 timer: no prescaling */
-#define myTIM2_PRESCALER ((uint16_t)0x0000)
+//#define myTIM2_PRESCALER ((uint16_t)0x0000)
 /* Maximum possible setting for overflow */
-#define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
+//#define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
+
 
 
 //Port and peripheral initialization
+void myClock_Init(){
+  //enable clock for ports A,B & C
+  RCC->AHBENR= 0x000E0000;
+  //trace_printf("%x \n",RCC->AHBENR);
+
+  //enable clock for ADC & DAC
+  RCC->APB2ENR=RCC_APB2ENR_ADCEN;
+  //trace_printf("%x \n",RCC->APB2ENR);
+  RCC->APB1ENR=RCC_APB1ENR_DACEN;
+  //trace_printf("%x \n",RCC->APB1ENR);
+}
+
 void myCOM_Init(){
 
 }
@@ -47,7 +69,12 @@ void myGPIOA_Init(){
 }
 
 void myGPIOB_Init(){
+	// Configure PB as output
+	GPIOB->MODER = 0x55555555;
+	//ensure no pull up, no pull down
+	GPIOB->PUPDR = 0x0;
 
+	//GPIOB->ODR =
 }
 
 void myGPIOC_Init(){
@@ -55,12 +82,14 @@ void myGPIOC_Init(){
   //Configure PC1 as analog input
   GPIOC->MODER = 0x03;
 
+  //
+
 }
 
 void myADC_Init() {
 
-	//calibrate ADC
-	ADC_CR_ADCAL= 1;
+	/*//calibrate ADC
+	ADC_CR_ADCAL;
 	trace_printf("Calibrating ADC \n");
 
 	//Wait for calibration to be completed
@@ -74,154 +103,33 @@ void myADC_Init() {
 
   //set clock mode
   ADC_CFGR2_CKMODE_0;
+*/
+  if((ADC1->CR & ADC_CR_ADEN)!= 0){
+    //if adc is enabled, disable adc
+    ADC1->CR |= ADC_CR_ADDIS;
+  }
+  while ((ADC1->CR & ADC_CR_ADEN)!=0) {
+    /* wait until adc is disabled */
+  }
+  ADC1->CFGR1 &= ~ADC_CFGR1_DMAEN;
+  ADC1->CR |= ADC_CR_ADCAL;
+  while((ADC1->CR & ADC_CR_ADCAL)!=0){
+    /* wait for calibration to finish */
+  }
+  int cal = (ADC1->DR) & 0x3F;
+  trace_printf("Calibration factor of: %u", cal);
 
-	//Enable ADC
-	ADC_CR_ADEN;
-
-  //
-
-
+  // Configure ADC Channel11 as analog input
+  ADC->CHSELR |=
+  // Configure the ADC1 in continuous mode, Overrun mode, right data alignment with a resolution equal to 12 bits
+  // Select Channel 11 and Convert it with 239.5 Cycles as sampling time
+  // Enable the ADC peripheral
+  // Wait the ADRDY flag
 }
 
-void myTIM2_Init(){
-	/* Enable clock for TIM2 peripheral */
-	// Relevant register: RCC->APB1ENR
-	RCC->APB1ENR= 0x1;
-
-	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
-	 * enable update events, interrupt on overflow only */
-	// Relevant register: TIM2->CR1
-	TIM2->CR1 = ((uint16_t)0x008C);
-
-	/* Set clock prescaler value */
-	TIM2->PSC = myTIM2_PRESCALER;
-
-	/* Set auto-reloaded delay */
-	TIM2->ARR = myTIM2_PERIOD;
-
-	/* Update timer registers */
-	// Relevant register: TIM2->EGR
-	TIM2->EGR = 0x01;
-
-	/* Assign TIM2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
-	//NVIC->IP[3]=0x0;
-	NVIC_SetPriority(TIM2_IRQn, 0);
-
-	/* Enable TIM2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	//NVIC->ISER[0]=0x0;
-	NVIC_EnableIRQ(TIM2_IRQn);
-
-	/* Enable update interrupt generation */
-	// Relevant register: TIM2->DIER
-	TIM2->DIER = 0x1;
-}
-
-void myEXTI_Init(){
-	/* Map EXTI2 line to PA2 */
-	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR[0]  &= ~(SYSCFG_EXTICR1_EXTI2);
-
-	/* EXTI2 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	EXTI->RTSR=0x4;
-
-	/* Unmask interrupts from EXTI2 line */
-	// Relevant register: EXTI->IMR
-	EXTI->IMR= 0x4;
-
-	/* Assign EXTI2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	//NVIC->IP[2] = 0x0;
-	NVIC_SetPriority(EXTI2_3_IRQn, 0);
-
-	/* Enable EXTI2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC->ISER[0]=0x1;
-	NVIC_EnableIRQ(EXTI2_3_IRQn);
-}
 
 //Interrupt Handlers
 
-/* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
-void TIM2_IRQHandler(){
-	/* Check if update interrupt flag is indeed set */
-	if ((TIM2->SR & TIM_SR_UIF) != 0)
-	{
-		trace_printf("\n*** Overflow! ***\n");
-
-		/* Clear update interrupt flag */
-		// Relevant register: TIM2->SR
-		TIM1->SR &= ~(TIM_SR_UIF);
-
-		/* Restart stopped timer */
-		// Relevant register: TIM2->CR1
-		TIM2->CR1 |= TIM_CR1_CEN;
-
-	}
-}
-
-
-/* This handler is declared in system/src/cmsis/vectors_stm32f0xx.c */
-void EXTI2_3_IRQHandler(){
-	// Declare/initialize your local variables here...
-	unsigned int time = 0;
-	unsigned int period = 0;
-
-	/* Check if EXTI2 interrupt pending flag is indeed set */
-	/*if ((EXTI->PR & EXTI_PR_PR2) != 0){
-		//
-		// 1. If this is the first edge:
-
-		//
-		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		// NOTE: A pending register (PR) bit is cleared
-		// by writing 1 to it.
-		//
-		if(timTrig == 0){
-			//set flag that timer has been trigger
-			timTrig = 1;
-
-			//	- Clear count register (TIM2->CNT).
-			TIM2->CNT =0X00000000;
-
-			//	- Start timer (TIM2->CR1).
-			TIM2->CR1 |= TIM_CR1_CEN;
-
-			//    Else (this is the second edge):
-		}else if (timTrig == 1){
-
-
-
-			//	- Stop timer (TIM2->CR1).
-			TIM2->CR1 ^= TIM_CR1_CEN;
-			//	- Read out count register (TIM2->CNT).
-			time = TIM2->CNT;
-			//	- Calculate signal period and frequency.
-			time = SystemCoreClock/time;
-			period = (1000000/time);
-
-			//	- Print calculated values to the console.
-			trace_printf("Frequency: %u Hz \n",time);
-			trace_printf("Period: %u microseconds \n", period);
-
-			//	  NOTE: Function trace_printf does not work
-			//	  with floating-point numbers: you must use
-			//	  "unsigned int" type to print your signal
-			//	  period and frequency.
-
-			//set flag that timer has been read
-			timTrig = 0;
-		}
-		//
-		// 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		// NOTE: A pending register (PR) bit is cleared
-		// by writing 1 to it.
-		//
-		EXTI->PR = 0xFFFF;
-	}*/
-}
 
 //Gobal variables
 
@@ -231,14 +139,14 @@ int main(int argc, char* argv[]){
 
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
+	myClock_Init();
 	myADC_Init();			/*Initialize ADC*/
-	///myGPIOA_Init();		/* Initialize I/O port PA */
-	//myTIM2_Init();		/* Initialize timer TIM2 */
-	myEXTI_Init();		/* Initialize EXTI */
+	///myGPIOA_Init();		/* Initialize I/O port A */
+	//myGPIOB_Init();		/*Initialize I/O port B*/
+  myGPIOC_Init();   /*Initialize I/O port C */
 
 	while (1){
-		/*if(ADC->ISR )
-		ADC->CR*/
+
 
 	}
 
