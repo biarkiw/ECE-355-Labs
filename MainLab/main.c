@@ -40,7 +40,8 @@ To Do
 int potVal = 0;
 int resVal = 0;
 unsigned char timTrig = 0;
-
+unsigned int time = 0;
+unsigned int period = 0;
 
 //Port and peripheral initialization
 void myClock_Init(){
@@ -178,7 +179,7 @@ void myEXTI_Init(){
 	//NVIC->IP[2] = 0x0;
 	NVIC_SetPriority(EXTI0_1_IRQn, 0);
 
-	/* Enable EXTI2 interrupts in NVIC */
+	/* Enable EXTI1 interrupts in NVIC */
 	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
@@ -194,7 +195,7 @@ void TIM2_IRQHandler(){
 
 		/* Clear update interrupt flag */
 		// Relevant register: TIM2->SR
-		TIM1->SR &= ~(TIM_SR_UIF);
+		TIM2->SR &= ~(TIM_SR_UIF);
 
 		/* Restart stopped timer */
 		// Relevant register: TIM2->CR1
@@ -204,10 +205,6 @@ void TIM2_IRQHandler(){
 }
 
 void EXTI0_1_IRQHandler(){
-	// Declare/initialize your local variables here...
-	unsigned int time = 0;
-	unsigned int period = 0;
-
 	/* Check if EXTI1 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR1) != 0){
 		//
@@ -286,6 +283,14 @@ int main(int argc, char* argv[]){
   /* Initialize DAC */
   myDAC_Init();
   trace_printf("DAC initialized \n");
+  /* Initialize TIM2 */
+  myTIM2_Init();
+  trace_printf("TIM2 initialized \n");
+  /* Initialize EXTI */
+  myEXTI_Init();
+  trace_printf("EXTI initialized \n");
+
+  unsigned char tal = 0;
 
 	while (1){
 
@@ -293,9 +298,12 @@ int main(int argc, char* argv[]){
       ADC1->ISR &= ~ADC_ISR_EOC;
       potVal = ADC1->DR & 0xFFFF;
       DAC->DHR12R1 = potVal & 0xFFF;
+      tal=1;
+    }
+    if(tal==1){
       resVal = 5000*((double)potVal/4020);
-      // 5kohm = 4020ish
       trace_printf("pot val : %u\n", resVal);
+      tal=0;
     }
 	}
 
