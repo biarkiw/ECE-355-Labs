@@ -62,7 +62,7 @@ void myClock_Init(){
 void myGPIOA_Init(){
 
 	/* Configure PA1 as input & PA4 as analog for DAC */
-	GPIOA->MODER= 0x00000300;
+	GPIOA->MODER |= GPIO_MODER_MODER4;
 
 	/* Ensure no pull-up/pull-down for PA */
 	GPIOA->PUPDR = 0x0;
@@ -163,7 +163,7 @@ void myTIM2_Init(){
 void myEXTI_Init(){
 	/* Map EXTI2 line to PA1 */
 	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR1  = SYSCFG_EXTICR1_EXTI1_PA;
+	SYSCFG->EXTICR[0]  = SYSCFG_EXTICR1_EXTI1_PA;
 
 	/* EXTI1 line interrupts: set rising-edge trigger */
 	// Relevant register: EXTI->RTSR
@@ -267,12 +267,25 @@ int main(int argc, char* argv[]){
 
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
-	myClock_Init();    /* Initialize peripheral clocks */
-	myGPIOA_Init();    /* Initialize I/O port A */
-	myGPIOB_Init();    /* Initialize I/O port B */
-  myGPIOC_Init();    /* Initialize I/O port C */
-  myADC_Init();      /* Initialize ADC */
-  myDAC_Init();      /* Initialize DAC */
+  trace_printf("Starting initializations \n");
+  /* Initialize peripheral clocks */
+	myClock_Init();
+  trace_printf("Clocks initialized \n");
+  /* Initialize I/O port A */
+	myGPIOA_Init();
+  trace_printf("GPIOA initialized \n");
+  /* Initialize I/O port B */
+  myGPIOB_Init();
+  trace_printf("GPIOB initialized \n");
+  /* Initialize I/O port C */
+  myGPIOC_Init();
+  trace_printf("GPIOC initialized \n");
+  /* Initialize ADC */
+  myADC_Init();
+  trace_printf("ADC initialized \n");
+  /* Initialize DAC */
+  myDAC_Init();
+  trace_printf("DAC initialized \n");
 
 	while (1){
 
@@ -280,7 +293,7 @@ int main(int argc, char* argv[]){
       ADC1->ISR &= ~ADC_ISR_EOC;
       potVal = ADC1->DR & 0xFFFF;
       DAC->DHR12R1 = potVal & 0xFFF;
-      resVal = 5000*(potVal/4020);
+      resVal = 5000*((double)potVal/4020);
       // 5kohm = 4020ish
       trace_printf("pot val : %u\n", resVal);
     }
