@@ -123,7 +123,9 @@ void myADC_Init() {
 
 void myDAC_Init(){
 
-  //
+  //enable DAC1, make sure all other bits are set to 0
+  DAC->CR = DAC_CR_EN1;
+
 }
 
 //Interrupt Handlers
@@ -131,25 +133,26 @@ void myDAC_Init(){
 
 //Gobal variables
 int potVal = 0;
-
+int resVal = 0;
 
 int main(int argc, char* argv[]){
 
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
-	myClock_Init();
-	myADC_Init();			/*Initialize ADC*/
-	///myGPIOA_Init();		/* Initialize I/O port A */
-	//myGPIOB_Init();		/*Initialize I/O port B*/
-  myGPIOC_Init();   /*Initialize I/O port C */
+	myClock_Init();    /* Initialize peripheral clocks */
+	myADC_Init();      /* Initialize ADC */
+	myGPIOA_Init();    /* Initialize I/O port A */
+	myGPIOB_Init();    /* Initialize I/O port B */
+  myGPIOC_Init();    /* Initialize I/O port C */
 
 	while (1){
-
 
     if((ADC1->ISR & ADC_ISR_EOC) != 0 ){
       ADC1->ISR &= ~ADC_ISR_EOC;
       potVal = ADC1->DR & 0xFFFF;
-      trace_printf("pot val : %u\n", potVal);
+      resVal = 5000*(potVal/4020);
+      // 5kohm = 4020ish
+      trace_printf("pot val : %u\n", resVal);
     }
 	}
 
