@@ -152,8 +152,9 @@ int main(int argc, char* argv[]){
     if((ADC1->ISR & ADC_ISR_EOC) != 0 ){
       getADC();
     }
-    if(print==1){
+    if(print>15){
       lcdPrint();
+			print = 0;
     }
 	}
 
@@ -354,7 +355,7 @@ void EXTI0_1_IRQHandler(){
 			time = TIM2->CNT;
 
       // trigger print
-      print=1;
+      print++;
 
 			//set flag that timer has been read
 			timTrig = 0;
