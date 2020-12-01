@@ -260,7 +260,7 @@ void lcdPrint(){
 		handshake();
 		IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
 		handshake();
-		unsigned int valPrt = SystemCoreClock/time;;
+		unsigned int valPrt = SystemCoreClock/time;
 		int cntLoop = 0;
 		unsigned int range = 10000000;
 		unsigned char hasprint= 0;
@@ -304,21 +304,9 @@ void lcdPrint(){
 				range = range/10;
 			}
 
-			}
-
-
 		}
-
-		void handshake(){
-		while((IOIN & LCD_READBF)==0){
-
-		}
-		IOOUT = 0X00000000;
-		while((IOIN & LCD_READBF)!=0){
-
-		}
-
 }
+
 
 void handshake(){
 	while((IOIN & LCD_READBF)==0){
