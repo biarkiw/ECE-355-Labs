@@ -189,74 +189,19 @@ void prtVals(){
 
 void lcdPrint(){
 	unsigned int data = 0;
-	//	- Clear count register (TIM2->CNT).
-	//TIM3->CNT =0X00000000;
-	//	- Start timer (TIM2->CR1).
-	//TIM3->CR1 |= TIM_CR1_CEN;
 
-	IOOUT = LCD_SETDRAM|(LCD_LINE1<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/25000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-	while ((IOIN & LCD_BUSY) != 0) {
-		//wait until busy signal is active
-	}
-
+	IOOUT = LCD_ENABLE|LCD_SETDRAM|(LCD_LINE1<<8);
+	handshake();
 	IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/20000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-	while ((IOIN & LCD_BUSY) != 0) {
-		//wait until busy signal is active
-	}
-
+	handshake();
 	IOOUT = LCD_WRITE|(ALPHA_H_LCD<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/20000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-	while ((IOIN & LCD_BUSY) != 0) {
-		//wait until busy signal is active
-	}
-
+	handshake();
 	IOOUT = LCD_WRITE|(ALPHA_M_LCD<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/20000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-	while ((IOIN & LCD_BUSY) != 0) {
-		//wait until busy signal is active
-	}
-
+	handshake();
 	IOOUT = LCD_WRITE|(ALPHA_S_LCD<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/20000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-	while ((IOIN & LCD_BUSY) != 0) {
-		//wait until busy signal is active
-	}
-
+	handshake();
 	IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
-	/*CNT=TIMER;
-	while((TIMER-CNT) < (SystemCoreClock/20000)){
-		//delay for 40 microseconds
-	}*/
-	for(int i=0; i<1920; i++){};
-	IOOUT = LCD_READBF;
-/*
+	handshake();
 	unsigned int valPrt = potVal;
 	int cntLoop = 0;
 	unsigned int range = 10000000;
@@ -298,19 +243,11 @@ void lcdPrint(){
 		}else{
 			range = range/10;
 		}
-		while ((IOIN & LCD_BUSY) != 0) {
-			//wait until busy signal is  not active
-		}
 		IOOUT = data;
-		/*CNT = TIMER;
-		while((TIMER-CNT) < (SystemCoreClock/20000)){
-			//delay for 50 microseconds
+		handshake();
 		}
-		for(int i=0; i<1920; i++){};
-		IOOUT = LCD_READBF;
-	}*/
-	//	- Stop timer (TIM2->CR1).
-	//TIM3->CR1 ^= TIM_CR1_CEN;
+
+
 }
 
 void handshake(){
