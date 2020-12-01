@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
       getADC();
     }
     if(print==1){
-      prtVals();
+      lcdPrint();
     }
 	}
 
@@ -213,27 +213,25 @@ void lcdPrint(){
 				valPrt -= range;
 				cntLoop++;
 			}
-			switch (cntLoop) {
-				case 1:
+			if(cntLoop==1){
 				data = LCD_WRITE|(NUM_1_LCD<<8);
-				case 2:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_2_LCD<<8);
-				case 3:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_3_LCD<<8);
-				case 4:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_4_LCD<<8);
-				case 5:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_5_LCD<<8);
-				case 6:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_6_LCD<<8);
-				case 7:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_7_LCD<<8);
-				case 8:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_8_LCD<<8);
-				case 9:
+			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_9_LCD<<8);
-				default:
-				trace_printf("something went wrong!");
+			}
 			}
 			range = range/10;
 			hasprint = 1;
@@ -260,10 +258,10 @@ void lcdPrint(){
 		handshake();
 		IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
 		handshake();
-		unsigned int valPrt = SystemCoreClock/time;
-		int cntLoop = 0;
-		unsigned int range = 10000000;
-		unsigned char hasprint= 0;
+		valPrt = SystemCoreClock/time;
+		cntLoop = 0;
+		range = 10000000;
+		hasprint= 0;
 		while((valPrt>0) ){
 			cntLoop = 0;
 			if(valPrt>=range){
@@ -271,27 +269,24 @@ void lcdPrint(){
 					valPrt -= range;
 					cntLoop++;
 				}
-				switch (cntLoop) {
-					case 1:
+				if(cntLoop==1){
 					data = LCD_WRITE|(NUM_1_LCD<<8);
-					case 2:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_2_LCD<<8);
-					case 3:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_3_LCD<<8);
-					case 4:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_4_LCD<<8);
-					case 5:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_5_LCD<<8);
-					case 6:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_6_LCD<<8);
-					case 7:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_7_LCD<<8);
-					case 8:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_8_LCD<<8);
-					case 9:
+				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_9_LCD<<8);
-					default:
-					trace_printf("something went wrong!");
 				}
 				range = range/10;
 				hasprint = 1;
