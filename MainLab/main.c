@@ -33,7 +33,7 @@
 #define LCD_CURSOR ((uint16_t)0x1000)   //cursor/display shift
 #define LCD_FUNCTSET ((uint16_t)0x3800) //function set (0X3C00) to change font
 #define LCD_BUSY ((uint16_t)0x8000)     //busy flag from lcd
-#define LCD_READBF ((uint16_t)0x0040)   //set to read busy flag
+#define LCD_READBF ((uint16_t)0x0080)   //set to read busy flag
 #define LCD_LINE1 ((uint8_t)0x00)       //DDRAM address for line 1
 #define LCD_LINE2 ((uint8_t)0x40)       //DDRAM address for line 2
 #define LCD_SETDRAM ((uint8_t)0x80)     //set DDRAM address
@@ -110,7 +110,7 @@ void EXTI0_1_IRQHandler(void);
 void getADC(void);
 void prtVals(void);
 void lcdPrint(void);
-
+void handshake(void);
 
 int main(int argc, char* argv[]){
 
@@ -312,6 +312,15 @@ void lcdPrint(){
 	//TIM3->CR1 ^= TIM_CR1_CEN;
 }
 
+void handshake(){
+	while((IOIN & LCD_READBF)==0){
+
+	}
+	IOOUT = 0X00000000;
+	while((IOIN & LCD_READBF)!=0){
+
+	}
+}
 
 
 //Interrupt Handlers
@@ -413,7 +422,7 @@ void myGPIOA_Init(){
 void myGPIOB_Init(){
 
 	// Configure PB in alternet function mode
-	GPIOB->MODER = 0xAAAAAAAA;
+	GPIOB->MODER = 0x55551555;
 	//ensure no pull up, no pull down
 	GPIOB->PUPDR = 0x0;
 
@@ -550,31 +559,31 @@ void lcdStart(){
 
   IOOUT = LCD_FUNCTSET;
   //CNT = TIMER;
-	for(int i=0; i<4800; i++){};
+	//for(int i=0; i<4800; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/10000)){
     //delay for 100 microseconds
   }*/
-
+	handshake();
   IOOUT = LCD_PCONT;
   //CNT = TIMER;
-	for(int i=0; i<1920; i++){};
+	//for(int i=0; i<1920; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/25000)){
     //delay for 40 microseconds
   }*/
-
+	handshake();
   IOOUT = LCD_CLEAR;
   //CNT = TIMER;
-	for(int i=0; i<76800; i++){};
+	//for(int i=0; i<76800; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/625)){
     //delay for 1.6 milliseconds
   }*/
-
+	handshake();
   IOOUT = LCD_EMS;
-  CNT = TIMER;
-  while((IOIN & LCD_BUSY) != 0){
+  //CNT = TIMER;
+  //while((IOIN & LCD_BUSY) != 0){
     //wait until the busy flag is gone
   }
-
+	handshake();
   //	- Stop timer (TIM2->CR1).
   //TIM3->CR1 ^= TIM_CR1_CEN;
   lcdPrint();
