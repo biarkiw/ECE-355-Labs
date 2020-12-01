@@ -27,7 +27,7 @@
 
 /*general opperation bit definition for current project*/
 #define LCD_CLEAR ((uint16_t)0x0100)    //clear display
-#define LCD_RHOME ((uint16_t)0x0200)    //return home
+#define LCD_RHOME ((uint16_t)0x0210)    //return home
 #define LCD_EMS ((uint16_t)0x0600)      //entry mode set
 #define LCD_PCONT ((uint16_t)0x0C00)    //display ON/OFF control
 #define LCD_CURSOR ((uint16_t)0x1000)   //cursor/display shift
@@ -36,9 +36,9 @@
 #define LCD_READBF ((uint16_t)0x0080)   //set to read busy flag
 #define LCD_LINE1 ((uint8_t)0x00)       //DDRAM address for line 1
 #define LCD_LINE2 ((uint8_t)0x40)       //DDRAM address for line 2
-#define LCD_SETDRAM ((uint8_t)0x80)     //set DDRAM address
+#define LCD_SETDRAM ((uint16_t)0xC010)     //set DDRAM address
 #define LCD_WRITE ((uint16_t)0x0030)     //write do lcd, must be or'd with data
-#define LCD_ENABLE ((uint16_t)0x0004)
+#define LCD_ENABLE ((uint16_t)0x0010)
 
 /*character bit definition*/
 //capital letters
@@ -190,7 +190,7 @@ void prtVals(){
 void lcdPrint(){
 	unsigned int data = 0;
 
-	IOOUT = LCD_ENABLE|LCD_SETDRAM|(LCD_LINE1<<8);
+	IOOUT = LCD_RHOME;
 	handshake();
 	IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
 	handshake();
@@ -214,39 +214,109 @@ void lcdPrint(){
 				cntLoop++;
 			}
 			switch (cntLoop) {
-				case '1':
+				case 1:
 				data = LCD_WRITE|(NUM_1_LCD<<8);
-				case '2':
+				case 2:
 				data = LCD_WRITE|(NUM_2_LCD<<8);
-				case '3':
+				case 3:
 				data = LCD_WRITE|(NUM_3_LCD<<8);
-				case '4':
+				case 4:
 				data = LCD_WRITE|(NUM_4_LCD<<8);
-				case '5':
+				case 5:
 				data = LCD_WRITE|(NUM_5_LCD<<8);
-				case '6':
+				case 6:
 				data = LCD_WRITE|(NUM_6_LCD<<8);
-				case '7':
+				case 7:
 				data = LCD_WRITE|(NUM_7_LCD<<8);
-				case '8':
+				case 8:
 				data = LCD_WRITE|(NUM_8_LCD<<8);
-				case '9':
+				case 9:
 				data = LCD_WRITE|(NUM_9_LCD<<8);
 				default:
 				trace_printf("something went wrong!");
 			}
 			range = range/10;
 			hasprint = 1;
+			IOOUT = data;
+			handshake();
 		}else if(hasprint==1){
-			data = LCD_WRITE|(NUM_0_LCD<<8);
+			IOOUT = LCD_WRITE|(NUM_0_LCD<<8);
 			range = range/10;
 		}else{
 			range = range/10;
 		}
-		IOOUT = data;
-		handshake();
+
 		}
 
+		IOOUT = LCD_SETDRAM;
+		handshake();
+		IOOUT = LCD_WRITE|(ALPHA_F_LCD<<8);
+		handshake();
+		IOOUT = LCD_WRITE|(ALPHA_R_LCD<<8);
+		handshake();
+		IOOUT = LCD_WRITE|(ALPHA_E_LCD<<8);
+		handshake();
+		IOOUT = LCD_WRITE|(ALPHA_Q_LCD<<8);
+		handshake();
+		IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
+		handshake();
+		unsigned int valPrt = SystemCoreClock/time;;
+		int cntLoop = 0;
+		unsigned int range = 10000000;
+		unsigned char hasprint= 0;
+		while((valPrt>0) ){
+			cntLoop = 0;
+			if(valPrt>=range){
+				while(valPrt>=range){
+					valPrt -= range;
+					cntLoop++;
+				}
+				switch (cntLoop) {
+					case 1:
+					data = LCD_WRITE|(NUM_1_LCD<<8);
+					case 2:
+					data = LCD_WRITE|(NUM_2_LCD<<8);
+					case 3:
+					data = LCD_WRITE|(NUM_3_LCD<<8);
+					case 4:
+					data = LCD_WRITE|(NUM_4_LCD<<8);
+					case 5:
+					data = LCD_WRITE|(NUM_5_LCD<<8);
+					case 6:
+					data = LCD_WRITE|(NUM_6_LCD<<8);
+					case 7:
+					data = LCD_WRITE|(NUM_7_LCD<<8);
+					case 8:
+					data = LCD_WRITE|(NUM_8_LCD<<8);
+					case 9:
+					data = LCD_WRITE|(NUM_9_LCD<<8);
+					default:
+					trace_printf("something went wrong!");
+				}
+				range = range/10;
+				hasprint = 1;
+				IOOUT = data;
+				handshake();
+			}else if(hasprint==1){
+				IOOUT = LCD_WRITE|(NUM_0_LCD<<8);
+				range = range/10;
+			}else{
+				range = range/10;
+			}
+
+			}
+
+
+		}
+
+		void handshake(){
+		while((IOIN & LCD_READBF)==0){
+
+		}
+		IOOUT = 0X00000000;
+		while((IOIN & LCD_READBF)!=0){
+
+		}
 
 }
 
@@ -258,6 +328,7 @@ void handshake(){
 	while((IOIN & LCD_READBF)!=0){
 
 	}
+
 }
 
 
@@ -510,17 +581,9 @@ void lcdStart(){
   }*/
 	handshake();
   IOOUT = LCD_CLEAR|LCD_ENABLE;
-  //CNT = TIMER;
-	//for(int i=0; i<76800; i++){};
-  /*while((TIMER-CNT) < (SystemCoreClock/625)){
-    //delay for 1.6 milliseconds
-  }*/
 	handshake();
   IOOUT = LCD_EMS|LCD_ENABLE;
-  //CNT = TIMER;
-  //while((IOIN & LCD_BUSY) != 0){
-    //wait until the busy flag is gone
-  }
+
 	handshake();
   //	- Stop timer (TIM2->CR1).
   //TIM3->CR1 ^= TIM_CR1_CEN;
