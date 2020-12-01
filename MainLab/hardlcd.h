@@ -32,7 +32,7 @@
 #define LCD_LINE2 ((uint8_t)0x40)       //DDRAM address for line 2
 #define LCD_SETDRAM ((uint8_t)0x80)     //set DDRAM address
 #define LCD_WRITE ((uint16_t)0x0030)     //write do lcd, must be or'd with data
-
+#define LCD_ENABLE ((uint16_t)0x0004)     //write do lcd, must be or'd with data
 
 
 /*character bit definition*/

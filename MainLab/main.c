@@ -38,6 +38,7 @@
 #define LCD_LINE2 ((uint8_t)0x40)       //DDRAM address for line 2
 #define LCD_SETDRAM ((uint8_t)0x80)     //set DDRAM address
 #define LCD_WRITE ((uint16_t)0x0030)     //write do lcd, must be or'd with data
+#define LCD_ENABLE ((uint16_t)0x0004)
 
 /*character bit definition*/
 //capital letters
@@ -557,28 +558,28 @@ void lcdStart(){
   //	- Start timer (TIM2->CR1).
   //TIM3->CR1 |= TIM_CR1_CEN;
 
-  IOOUT = LCD_FUNCTSET;
+  IOOUT = LCD_FUNCTSET|LCD_ENABLE;
   //CNT = TIMER;
 	//for(int i=0; i<4800; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/10000)){
     //delay for 100 microseconds
   }*/
 	handshake();
-  IOOUT = LCD_PCONT;
+  IOOUT = LCD_PCONT|LCD_ENABLE;
   //CNT = TIMER;
 	//for(int i=0; i<1920; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/25000)){
     //delay for 40 microseconds
   }*/
 	handshake();
-  IOOUT = LCD_CLEAR;
+  IOOUT = LCD_CLEAR|LCD_ENABLE;
   //CNT = TIMER;
 	//for(int i=0; i<76800; i++){};
   /*while((TIMER-CNT) < (SystemCoreClock/625)){
     //delay for 1.6 milliseconds
   }*/
 	handshake();
-  IOOUT = LCD_EMS;
+  IOOUT = LCD_EMS|LCD_ENABLE;
   //CNT = TIMER;
   //while((IOIN & LCD_BUSY) != 0){
     //wait until the busy flag is gone
@@ -586,7 +587,8 @@ void lcdStart(){
 	handshake();
   //	- Stop timer (TIM2->CR1).
   //TIM3->CR1 ^= TIM_CR1_CEN;
-  lcdPrint();
+  IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
+	handshake();
 }
 
 #pragma GCC diagnostic pop
