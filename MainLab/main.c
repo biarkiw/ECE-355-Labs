@@ -26,7 +26,7 @@
 #define IOIN (GPIOB->IDR)   //intput register to get data from lcd
 
 /*general opperation bit definition for current project*/
-#define LCD_CLEAR ((uint16_t)0x0100)    //clear display
+#define LCD_CLEAR ((uint16_t)0x0110)    //clear display
 #define LCD_RHOME ((uint16_t)0x0210)    //return home
 #define LCD_EMS ((uint16_t)0x0600)      //entry mode set
 #define LCD_PCONT ((uint16_t)0x0C00)    //display ON/OFF control
@@ -138,7 +138,6 @@ int main(int argc, char* argv[]){
   trace_printf("DAC initialized \n");
   /* Initialize TIM2 */
   myTIM2_Init();
-	//myTIM3_Init();
   trace_printf("TIM2 initialized \n");
   /* Initialize EXTI */
   myEXTI_Init();
@@ -217,21 +216,20 @@ void lcdPrint(){
 				data = LCD_WRITE|(NUM_1_LCD<<8);
 			}else if (cntLoop==2){
 				data = LCD_WRITE|(NUM_2_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==3){
 				data = LCD_WRITE|(NUM_3_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==4){
 				data = LCD_WRITE|(NUM_4_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==5){
 				data = LCD_WRITE|(NUM_5_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==6){
 				data = LCD_WRITE|(NUM_6_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==7){
 				data = LCD_WRITE|(NUM_7_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==8){
 				data = LCD_WRITE|(NUM_8_LCD<<8);
-			}else if (cntLoop==2){
+			}else if (cntLoop==9){
 				data = LCD_WRITE|(NUM_9_LCD<<8);
-			}
 			}
 			range = range/10;
 			hasprint = 1;
@@ -273,19 +271,19 @@ void lcdPrint(){
 					data = LCD_WRITE|(NUM_1_LCD<<8);
 				}else if (cntLoop==2){
 					data = LCD_WRITE|(NUM_2_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==3){
 					data = LCD_WRITE|(NUM_3_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==4){
 					data = LCD_WRITE|(NUM_4_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==5){
 					data = LCD_WRITE|(NUM_5_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==6){
 					data = LCD_WRITE|(NUM_6_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==7){
 					data = LCD_WRITE|(NUM_7_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==8){
 					data = LCD_WRITE|(NUM_8_LCD<<8);
-				}else if (cntLoop==2){
+				}else if (cntLoop==9){
 					data = LCD_WRITE|(NUM_9_LCD<<8);
 				}
 				range = range/10;
@@ -329,23 +327,6 @@ void TIM2_IRQHandler(){
 		/* Restart stopped timer */
 		// Relevant register: TIM2->CR1
 		TIM2->CR1 |= TIM_CR1_CEN;
-
-	}
-}
-
-void TIM3_IRQHandler(){
-	/* Check if update interrupt flag is indeed set */
-	if ((TIM3->SR & TIM_SR_UIF) != 0)
-	{
-		trace_printf("\n*** Overflow! ***\n");
-
-		/* Clear update interrupt flag */
-		// Relevant register: TIM2->SR
-		TIM3->SR &= ~(TIM_SR_UIF);
-
-		/* Restart stopped timer */
-		// Relevant register: TIM2->CR1
-		TIM3->CR1 |= TIM_CR1_CEN;
 
 	}
 }
@@ -501,31 +482,6 @@ void myTIM2_Init(){
 	TIM2->DIER = 0x1;
 }
 
-void myTIM3_Init(){
-
-	/* Configure TIM3: buffer auto-reload, count up, stop on overflow,
-	 * enable update events, interrupt on overflow only */
-	TIM3->CR1 = ((uint16_t)0x008C);
-
-	/* Set clock prescaler value */
-	TIM3->PSC = myTIM2_PRESCALER;
-
-	/* Set auto-reloaded delay */
-	TIM3->ARR = myTIM2_PERIOD;
-
-	/* Update timer registers */
-	TIM3->EGR = 0x01;
-
-	/* Assign TIM2 interrupt priority = 4 in NVIC */
-	NVIC_SetPriority(TIM2_IRQn, 4);
-
-	/* Enable TIM2 interrupts in NVIC */
-	NVIC_EnableIRQ(TIM2_IRQn);
-
-	/* Enable update interrupt generation */
-	TIM3->DIER = 0x1;
-}
-
 void myEXTI_Init(){
 	/* Map EXTI2 line to PA1 */
 	SYSCFG->EXTICR[0]  = SYSCFG_EXTICR1_EXTI1_PA;
@@ -544,32 +500,19 @@ void myEXTI_Init(){
 }
 
 void lcdStart(){
-  //	- Clear count register (TIM2->CNT).
-  //TIM3->CNT =0X00000000;
-  //	- Start timer (TIM2->CR1).
-  //TIM3->CR1 |= TIM_CR1_CEN;
 
   IOOUT = LCD_FUNCTSET|LCD_ENABLE;
-  //CNT = TIMER;
-	//for(int i=0; i<4800; i++){};
-  /*while((TIMER-CNT) < (SystemCoreClock/10000)){
-    //delay for 100 microseconds
-  }*/
+
 	handshake();
   IOOUT = LCD_PCONT|LCD_ENABLE;
-  //CNT = TIMER;
-	//for(int i=0; i<1920; i++){};
-  /*while((TIMER-CNT) < (SystemCoreClock/25000)){
-    //delay for 40 microseconds
-  }*/
+
 	handshake();
   IOOUT = LCD_CLEAR|LCD_ENABLE;
 	handshake();
   IOOUT = LCD_EMS|LCD_ENABLE;
 
 	handshake();
-  //	- Stop timer (TIM2->CR1).
-  //TIM3->CR1 ^= TIM_CR1_CEN;
+
   IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
 	handshake();
 }
