@@ -115,6 +115,7 @@ void myDAC_Init(void);
 void myTIM2_Init(void);
 //void myTIM3_Init(void);
 void myEXTI_Init(void);
+void mySPI_Init(void);
 void lcdStart(void);
 
 //Interrupt Handlers
@@ -157,6 +158,8 @@ int main(int argc, char* argv[]){
   /* Initialize EXTI */
   myEXTI_Init();
   trace_printf("EXTI initialized \n");
+  /* Initialize SPI*/
+  mySPI_Init();
   /* Initialize LCD */
   //lcdStart();
   trace_printf("LCD initialized \n");
@@ -449,7 +452,7 @@ void myGPIOA_Init(){
 void myGPIOB_Init(){
 
 	// Configure PB in alternet function mode
-	GPIOB->MODER = 0x55551555;
+	GPIOB->MODER = 0xAAAAAAAA;
 	//ensure no pull up, no pull down
 	GPIOB->PUPDR = 0x0;
 
@@ -551,6 +554,16 @@ void myEXTI_Init(){
 
 	/* Enable EXTI1 interrupts in NVIC */
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
+}
+
+void mySPI_Init(){
+	/* (1) Master selection, BR: Fpclk/256 (due to C27 on the board, SPI_CLK is
+	set to the minimum) CPOL and CPHA at zero (rising first edge) */
+	/* (2) Slave select output enabled, RXNE IT, 8-bit Rx fifo */
+	/* (3) Enable SPI1 */
+	SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR; /* (1) */
+	SPI1->CR2 = SPI_CR2_SSOE | SPI_CR2_RXNEIE | SPI_CR2_FRXTH | SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0; /* (2) */
+	SPI1->CR1 |= SPI_CR1_SPE; /* (3) */
 }
 
 void lcdStart(){
