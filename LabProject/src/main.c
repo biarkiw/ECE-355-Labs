@@ -59,8 +59,8 @@
 
 /*registers for current project*/
 //#define TIMER (TIM3->CNT)   //counter register
-#define IOOUT (GPIOB->ODR)  //output register to send data to lcd
-#define IOIN (GPIOB->IDR)   //intput register to get data from lcd
+//#define IOOUT (GPIOB->ODR)  //output register to send data to lcd
+//#define IOIN (GPIOB->IDR)   //intput register to get data from lcd
 
 /*general opperation bit definition for current project*/
 #define LCD_CLEAR ((uint16_t)0x0110)    //clear display
