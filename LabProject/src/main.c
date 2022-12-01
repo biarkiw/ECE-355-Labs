@@ -557,13 +557,21 @@ void myEXTI_Init(){
 }
 
 void mySPI_Init(){
-	/* (1) Master selection, BR: Fpclk/256 (due to C27 on the board, SPI_CLK is
-	set to the minimum) CPOL and CPHA at zero (rising first edge) */
-	/* (2) Slave select output enabled, RXNE IT, 8-bit Rx fifo */
-	/* (3) Enable SPI1 */
-	SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR; /* (1) */
-	SPI1->CR2 = SPI_CR2_SSOE | SPI_CR2_RXNEIE | SPI_CR2_FRXTH | SPI_CR2_DS_2 | SPI_CR2_DS_1 | SPI_CR2_DS_0; /* (2) */
-	SPI1->CR1 |= SPI_CR1_SPE; /* (3) */
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLED;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
+	hspi1.Init.CRCPolynomial = 7;
+	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLED;
+	HAL_SPI_Init(&hspi1);
 }
 
 void lcdStart(){
