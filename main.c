@@ -1,29 +1,8 @@
 /*
- * This file is part of the µOS++ distribution.
- *   (https://github.com/micro-os-plus)
- * Copyright (c) 2014 Liviu Ionescu.
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom
- * the Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
+File Created by: Biarki Weeks & Fraser Jones
+With reference to the ECE 355 Lab Manual and Lecture Notes
+in addition to various online resources and tutorials
+*/
 
 // ----------------------------------------------------------------------------
 
@@ -31,19 +10,10 @@
 #include <stdlib.h>
 #include "diag/trace.h"
 #include "cmsis/cmsis_device.h"
+#include "stm32f0-hal\stm32f0xx_hal_spi.h"
+#include "stm32f0-hal/stm32f0xx_hal_spi_ex.h"
 
 // ----------------------------------------------------------------------------
-//
-// STM32F0 empty sample (trace via DEBUG).
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the DEBUG output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace-impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
-
-// ----- main() ---------------------------------------------------------------
 
 // Sample pragmas to cope with warnings. Please note the related line at
 // the end of this function, used to pop the compiler diagnostics status.
@@ -56,11 +26,12 @@
 #define myTIM2_PRESCALER ((uint16_t)0x0000)
 /* Maximum possible setting for overflow */
 #define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
+#define myTIM3_PRESCALER ((uint16_t) 0xFFFF)  // LCD refresh rate
+#define myTIM6_PRESCALER ((uint16_t) 4)
+SPI_HandleTypeDef hspi1;
 
-/*registers for current project*/
-//#define TIMER (TIM3->CNT)   //counter register
-#define IOOUT (GPIOB->ODR)  //output register to send data to lcd
-#define IOIN (GPIOB->IDR)   //intput register to get data from lcd
+
+
 
 /*general opperation bit definition for current project*/
 #define LCD_CLEAR ((uint16_t)0x0110)    //clear display
@@ -122,8 +93,7 @@
 unsigned int potVal = 0;
 double resVal = 0;
 unsigned char timTrig = 0;
-unsigned int time = 0;
-unsigned int period = 0;
+float freq = 0;
 unsigned char print = 0;
 //unsigned int CNT = 0;
 
@@ -132,72 +102,73 @@ void myClock_Init(void);
 void SystemClock48MHz(void);
 void myGPIOA_Init(void);
 void myGPIOB_Init(void);
-void myGPIOC_Init(void);
 void myADC_Init(void);
 void myDAC_Init(void);
 void myTIM2_Init(void);
-//void myTIM3_Init(void);
 void myEXTI_Init(void);
+void mySPI_Init(void);
 void lcdStart(void);
+void myTIM3_Init(void);
+void myTIM6_Init(void);
 
 //Interrupt Handlers
 void TIM2_IRQHandler(void);
-//void TIM3_IRQHandler(void);
 void EXTI0_1_IRQHandler(void);
 
 //Functions
 void getADC(void);
 void prtVals(void);
-void lcdPrint(void);
-void handshake(void);
+void wait(int microseconds);
+void writeToLCD(uint8_t, int);   // 4-bit interface (high and low nibble) for the final call of HC595
+void HC595Write(uint8_t);  // SPI: LCK and MOSI running
 
+// ----- main() ---------------------------------------------------------------
 int main(int argc, char* argv[]){
-
+	
+	
+	trace_printf("Starting initializations \n");
+	/* Initialize peripheral clocks */
+		myClock_Init();
+	trace_printf("Clocks initialized \n");
 	trace_printf("System clock: %u Hz\n", SystemCoreClock);
+	/* Initialize I/O port A */
+		myGPIOA_Init();
+	trace_printf("GPIOA initialized \n");
+	/* Initialize I/O port B */
+	myGPIOB_Init();
+	GPIOB -> ODR |= GPIO_PIN_4;
+	trace_printf("GPIOB initialized \n");
+	/* Initialize ADC */
+	myADC_Init();
+	trace_printf("ADC initialized \n");
+	/* Initialize DAC */
+	myDAC_Init();
+	trace_printf("DAC initialized \n");
+	/* Initialize SPI*/
+		mySPI_Init();
+	/* Initialize TIM2 */
+	myTIM2_Init();
+	myTIM3_Init();
+	myTIM6_Init();
+	trace_printf("TIM2, TIM3 & TIM6 initialized \n");
+	/* Initialize EXTI */
+	myEXTI_Init();
+	trace_printf("EXTI initialized \n");
 
-  trace_printf("Starting initializations \n");
-  /* Initialize peripheral clocks */
-	myClock_Init();
-  trace_printf("Clocks initialized \n");
-  /* Initialize I/O port A */
-	myGPIOA_Init();
-  trace_printf("GPIOA initialized \n");
-  /* Initialize I/O port B */
-  myGPIOB_Init();
-  trace_printf("GPIOB initialized \n");
-  /* Initialize I/O port C */
-  myGPIOC_Init();
-  trace_printf("GPIOC initialized \n");
-  /* Initialize ADC */
-  myADC_Init();
-  trace_printf("ADC initialized \n");
-  /* Initialize DAC */
-  myDAC_Init();
-  trace_printf("DAC initialized \n");
-  /* Initialize TIM2 */
-  myTIM2_Init();
-  trace_printf("TIM2 initialized \n");
-  /* Initialize EXTI */
-  myEXTI_Init();
-  trace_printf("EXTI initialized \n");
-  /* Initialize LCD */
-  //lcdStart();
-  trace_printf("LCD initialized \n");
+	/* Initialize LCD */
+	myLCD_Init();
+	trace_printf("LCD initialized \n");
+	uint8_t data = 0x85;
+	GPIOB -> ODR=0x0000;
+		while (1){
 
+		if((ADC1->ISR & ADC_ISR_EOC) != 0 ){
+		getADC();
+		}
+	
+		}
 
-	while (1){
-
-    if((ADC1->ISR & ADC_ISR_EOC) != 0 ){
-      getADC();
-    }
-    if(print>15){
-      //lcdPrint();
-      prtVals();
-			print = 0;
-    }
-	}
-
-	return 0;
+		return 0;
 }
 
 //Functions
@@ -208,151 +179,70 @@ void getADC(){
 }
 
 void prtVals(){
-  /*double tmp = potVal;
-  resVal = 5000*(tmp/4020);*/
-  trace_printf("pot val : %u\n", potVal);
+	/*used to print to the console*/
+	trace_printf("pot val : %u\n", potVal);
 
-  //	- Calculate signal period and frequency.
-  time = SystemCoreClock/time;
-  period = (1000000/time);
+	//	- Calculate signal period and frequency.
 
-  //	- Print calculated values to the console.
-  trace_printf("Frequency: %u Hz \n",time);
-  trace_printf("Period: %u microseconds \n", period);
+	unsigned int frequency = (unsigned int)freq;
+	//	- Print calculated values to the console.
+	trace_printf("Frequency: %d Hz \n",frequency);
 
-  resVal = 0;
-  time = 0;
-  period = 0;
-  print = 0;
-}
-
-void lcdPrint(){
-	unsigned int data = 0;
-
-	IOOUT = LCD_RHOME;
-	handshake();
-	IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
-	handshake();
-	IOOUT = LCD_WRITE|(ALPHA_H_LCD<<8);
-	handshake();
-	IOOUT = LCD_WRITE|(ALPHA_M_LCD<<8);
-	handshake();
-	IOOUT = LCD_WRITE|(ALPHA_S_LCD<<8);
-	handshake();
-	IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
-	handshake();
-	unsigned int valPrt = potVal;
-	int cntLoop = 0;
-	unsigned int range = 10000000;
-	unsigned char hasprint= 0;
-	while((valPrt>0) ){
-		cntLoop = 0;
-		if(valPrt>=range){
-			while(valPrt>=range){
-				valPrt -= range;
-				cntLoop++;
-			}
-			if(cntLoop==1){
-				data = LCD_WRITE|(NUM_1_LCD<<8);
-			}else if (cntLoop==2){
-				data = LCD_WRITE|(NUM_2_LCD<<8);
-			}else if (cntLoop==3){
-				data = LCD_WRITE|(NUM_3_LCD<<8);
-			}else if (cntLoop==4){
-				data = LCD_WRITE|(NUM_4_LCD<<8);
-			}else if (cntLoop==5){
-				data = LCD_WRITE|(NUM_5_LCD<<8);
-			}else if (cntLoop==6){
-				data = LCD_WRITE|(NUM_6_LCD<<8);
-			}else if (cntLoop==7){
-				data = LCD_WRITE|(NUM_7_LCD<<8);
-			}else if (cntLoop==8){
-				data = LCD_WRITE|(NUM_8_LCD<<8);
-			}else if (cntLoop==9){
-				data = LCD_WRITE|(NUM_9_LCD<<8);
-			}
-			range = range/10;
-			hasprint = 1;
-			IOOUT = data;
-			handshake();
-		}else if(hasprint==1){
-			IOOUT = LCD_WRITE|(NUM_0_LCD<<8);
-			range = range/10;
-		}else{
-			range = range/10;
-		}
-
-		}
-
-		IOOUT = LCD_SETDRAM;
-		handshake();
-		IOOUT = LCD_WRITE|(ALPHA_F_LCD<<8);
-		handshake();
-		IOOUT = LCD_WRITE|(ALPHA_R_LCD<<8);
-		handshake();
-		IOOUT = LCD_WRITE|(ALPHA_E_LCD<<8);
-		handshake();
-		IOOUT = LCD_WRITE|(ALPHA_Q_LCD<<8);
-		handshake();
-		IOOUT = LCD_WRITE|(SYM_COL_LCD<<8);
-		handshake();
-		valPrt = SystemCoreClock/time;
-		cntLoop = 0;
-		range = 10000000;
-		hasprint= 0;
-		while((valPrt>0) ){
-			cntLoop = 0;
-			if(valPrt>=range){
-				while(valPrt>=range){
-					valPrt -= range;
-					cntLoop++;
-				}
-				if(cntLoop==1){
-					data = LCD_WRITE|(NUM_1_LCD<<8);
-				}else if (cntLoop==2){
-					data = LCD_WRITE|(NUM_2_LCD<<8);
-				}else if (cntLoop==3){
-					data = LCD_WRITE|(NUM_3_LCD<<8);
-				}else if (cntLoop==4){
-					data = LCD_WRITE|(NUM_4_LCD<<8);
-				}else if (cntLoop==5){
-					data = LCD_WRITE|(NUM_5_LCD<<8);
-				}else if (cntLoop==6){
-					data = LCD_WRITE|(NUM_6_LCD<<8);
-				}else if (cntLoop==7){
-					data = LCD_WRITE|(NUM_7_LCD<<8);
-				}else if (cntLoop==8){
-					data = LCD_WRITE|(NUM_8_LCD<<8);
-				}else if (cntLoop==9){
-					data = LCD_WRITE|(NUM_9_LCD<<8);
-				}
-				range = range/10;
-				hasprint = 1;
-				IOOUT = data;
-				handshake();
-			}else if(hasprint==1){
-				IOOUT = LCD_WRITE|(NUM_0_LCD<<8);
-				range = range/10;
-			}else{
-				range = range/10;
-			}
-
-		}
-}
-
-
-
-void handshake(){
-	while((IOIN & LCD_READBF)==0){
-
-	}
-	IOOUT = 0X00000000;
-	while((IOIN & LCD_READBF)!=0){
-
-	}
+	resVal = 0;
 
 }
 
+void wait(int microseconds){
+	// 12 cycles with prescaler = 1 microsecond
+	TIM6->ARR = 12 * microseconds;
+
+	// Set count to 0
+	TIM6->CNT = 0;
+	// Start timer
+	TIM6->CR1 |= 0x1;
+
+	// Clear status register
+	TIM6->SR = 0;
+	// Wait until timer overflows
+	while((TIM6->SR & 0x1) == 0);
+
+	// Stop timer
+	TIM6->CR1 &= 0xFFFE;
+
+}
+
+void writeToLCD(uint8_t c, int isCommand){
+	/* Function not tested*/
+    uint8_t RS = isCommand ? 0x00 : 0x40;
+    uint8_t EN = 0x80;
+
+    uint8_t highNibble = (c & 0xF0) >> 4;
+    uint8_t lowNibble = c & 0xF;
+
+    HC595Write(highNibble | LCD_WRITE);
+    HC595Write(highNibble | LCD_WRITE | LCD_ENABLE);
+    HC595Write(highNibble | LCD_WRITE);
+    HC595Write(lowNibble | LCD_WRITE);
+    HC595Write(lowNibble | LCD_WRITE | LCD_ENABLE);
+    HC595Write(lowNibble | LCD_WRITE);
+}
+
+void HC595Write(uint8_t data){
+
+		/* Force the LCK signal to 0 */
+	GPIOB -> ODR &= ~GPIO_PIN_4;
+
+  //wait(2);
+
+		/* Assumption: your data holds 8 bits to be sent */
+	HAL_SPI_Transmit(&hspi1, &data, 1, 1);
+
+
+
+		/* Force the LCK signal to 1 */
+	GPIOB -> ODR |= GPIO_PIN_4;
+
+}
 
 //Interrupt Handlers
 void TIM2_IRQHandler(){
@@ -371,32 +261,60 @@ void TIM2_IRQHandler(){
 
 	}
 }
+void TIM3_IRQHandler(){
+	/*Used to send inturupt to regularily print to console, intended for use with screen however proper writing to the screen was not achieved*/
+
+	/* Check if update interrupt flag is indeed set */
+	if ((TIM3->SR & TIM_SR_UIF) != 0)	{
+    prtVals();
+
+	/* Clear update interrupt flag */
+	// Relevant register: TIM2->SR
+	TIM3->SR &= 0xFFFE;
+
+	// Should correspond to a value of 1 second
+	TIM3->CNT = SystemCoreClock / myTIM3_PRESCALER;
+
+	/* Restart stopped timer */
+	// Relevant register: TIM2->CR1
+	TIM3->CR1 |= 0x1;
+	}
+}
 
 void EXTI0_1_IRQHandler(){
 	/* Check if EXTI1 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR1) != 0){
 
 		if(timTrig == 0){
-			//set flag that timer has been trigger
-			timTrig = 1;
-
-			//	- Clear count register (TIM2->CNT).
-			TIM2->CNT =0X00000000;
-
+		
 			//	- Start timer (TIM2->CR1).
 			TIM2->CR1 |= TIM_CR1_CEN;
+
+      	//set flag that timer has been trigger
+			timTrig = 1;
 
 			//    Else (this is the second edge):
 		}else if (timTrig == 1){
 
-			//	- Stop timer (TIM2->CR1).
-			TIM2->CR1 ^= TIM_CR1_CEN;
+			
+
 			//	- Read out count register (TIM2->CNT).
-			time = TIM2->CNT;
+			int time = TIM2->CNT;
 
-      // trigger print
-      print++;
+      //	- Stop timer (TIM2->CR1).
+			TIM2->CR1 ^= TIM_CR1_CEN;
 
+	    //	- Clear count register (TIM2->CNT).
+			TIM2->CNT =0X00000000;
+
+      double signalPeriod = time / (double) SystemCoreClock;
+      //unsigned int sig = (unsigned int)signalPeriod;
+		//trace_printf("the signalPeriod is , %u \n", sig);
+
+		  freq = (float) (1 / signalPeriod);
+      //unsigned int frequency = (unsigned int)freq;
+      //trace_printf("the FREQ is , %d \n", frequency);
+      
 			//set flag that timer has been read
 			timTrig = 0;
 		}
@@ -405,16 +323,17 @@ void EXTI0_1_IRQHandler(){
 	}
 }
 
-
 //Port and peripheral initialization
 void myClock_Init(){
 
+  void SystemClock48MHz();
+
   //enable clock for ports A,B & C
-  RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
+  RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN;
   //trace_printf("%x \n",RCC->AHBENR);
 
   //enable clock for ADC
-  RCC->APB2ENR |= RCC_APB2ENR_ADCEN;
+  RCC->APB2ENR |= RCC_APB2ENR_ADCEN | RCC_APB2ENR_SPI1EN;
   //trace_printf("%x \n",RCC->APB2ENR);
 
   //enable clock for DAC & TIM2
@@ -424,45 +343,45 @@ void myClock_Init(){
 }
 
 void SystemClock48MHz( void ){
-//
-// Disable the PLL
-//
-    RCC->CR &= ~(RCC_CR_PLLON);
-//
-// Wait for the PLL to unlock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
-//
-// Configure the PLL for a 48MHz system clock
-//
-    RCC->CFGR = 0x00280000;
+	//
+	// Disable the PLL
+	//
+		RCC->CR &= ~(RCC_CR_PLLON);
+	//
+	// Wait for the PLL to unlock
+	//
+		while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
+	//
+	// Configure the PLL for a 48MHz system clock
+	//
+		RCC->CFGR = 0x00280000;
 
-//
-// Enable the PLL
-//
-    RCC->CR |= RCC_CR_PLLON;
+	//
+	// Enable the PLL
+	//
+		RCC->CR |= RCC_CR_PLLON;
 
-//
-// Wait for the PLL to lock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
+	//
+	// Wait for the PLL to lock
+	//
+		while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
 
-//
-// Switch the processor to the PLL clock source
-//
-    RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
+	//
+	// Switch the processor to the PLL clock source
+	//
+		RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
 
-//
-// Update the system with the new clock frequency
-//
-    SystemCoreClockUpdate();
+	//
+	// Update the system with the new clock frequency
+	//
+		SystemCoreClockUpdate();
 
 }
 
 void myGPIOA_Init(){
 
 	/* Configure PA1 as input & PA4 as analog for DAC */
-	GPIOA->MODER |= GPIO_MODER_MODER4;
+	GPIOA->MODER |= 0x0FF0;
 
 	/* Ensure no pull-up/pull-down for PA */
 	GPIOA->PUPDR = 0x0;
@@ -471,21 +390,16 @@ void myGPIOA_Init(){
 
 void myGPIOB_Init(){
 
-	// Configure PB in alternet function mode
-	GPIOB->MODER = 0x55551555;
-	//ensure no pull up, no pull down
-	GPIOB->PUPDR = 0x0;
-
+	/* 
+  Configure pin: 
+  PB5 as alternate for MOSI
+  PB4 as output GPIO for the latch 
+  PB3 as alternate for Shifting Clock SCK
+  */
+	GPIOB->MODER =0x00000980;
 }
 
-void myGPIOC_Init(){
-
-  //Configure PC1 as analog input
-  GPIOC->MODER = 0x03;
-
-}
-
-void myADC_Init() {
+void myADC_Init(){
 
   /* calibrate ADC */
   if((ADC1->CR & ADC_CR_ADEN)!= 0){
@@ -516,7 +430,7 @@ void myADC_Init() {
   ADC1->CFGR1 |= (ADC_CFGR1_CONT | ADC_CFGR1_OVRMOD) & ((~ADC_CFGR1_ALIGN) & (~ADC_CFGR1_RES));
 
   // Configure ADC Channel11 as analog input
-  ADC1->CHSELR |= ADC_CHSELR_CHSEL11;
+  ADC1->CHSELR |= ADC_CHSELR_CHSEL5;
 
   // Select Channel 11 and Convert it with 239.5 Cycles as sampling time
   ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2;
@@ -559,6 +473,47 @@ void myTIM2_Init(){
 	TIM2->DIER = 0x1;
 }
 
+void myTIM3_Init(void){
+		/* Enable clock for TIM3 peripheral */
+		// Relevant register: RCC->APB1ENR
+		RCC->APB1ENR |= RCC_APB1RSTR_TIM3RST;
+
+		/* Configure TIM3: buffer auto-reload, count down, stop on overflow
+		/* Enable update events, interrupt on underflow only */
+		// Relevant register: TIM3->CR1
+		TIM3->CR1 &= 0xFFFD;
+		TIM3->CR1 |= 0x9D;
+
+		/* Set clock prescaler value */
+		// Frequency is 732Hz
+		TIM3->PSC = myTIM3_PRESCALER;
+
+		/* Set auto-reloaded delay */
+		TIM3->ARR = myTIM3_PRESCALER;
+
+		// Should correspond to a value of 1 second
+		TIM3->CNT = SystemCoreClock / myTIM3_PRESCALER;
+
+		
+		/* Update timer registers */
+		// Relevant register: TIM3->EGR
+		TIM3->EGR |= 0x1;
+		/* Assign TIM3 interrupt priority = 0 in NVIC */
+		// Relevant register: NVIC->IP[3] or use NVIC_SetPriority
+		NVIC_SetPriority(TIM3_IRQn, 0);
+
+		/* Enable TIM3 interrupts in NVIC */
+		// Relevant register: NVIC->ISER[0] or use NVIC_EnableIRQ
+		NVIC_EnableIRQ(TIM3_IRQn);
+
+		/* Enable update interrupt generation */
+		// Relevant register: TIM3->DIER
+		TIM3->DIER |= TIM_DIER_UIE;
+
+		// Start timer
+		TIM3->CR1 |= 0x1;
+}
+
 void myEXTI_Init(){
 	/* Map EXTI2 line to PA1 */
 	SYSCFG->EXTICR[0]  = SYSCFG_EXTICR1_EXTI1_PA;
@@ -576,22 +531,72 @@ void myEXTI_Init(){
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
-void lcdStart(){
+void mySPI_Init(){
+	/*Hall SPI Initalization for Master, 1-line, Motorola, 8-bit mode*/
 
-  IOOUT = LCD_FUNCTSET|LCD_ENABLE;
+	 hspi1.Instance = SPI1;
+	 hspi1.Init.Mode = SPI_MODE_MASTER;
+	 hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+	 hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	 hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	 hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	 hspi1.Init.NSS = SPI_NSS_SOFT;
+	 hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+	 hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	 hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  	hspi1.Init.CRCPolynomial = 7;
+  	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
 
-	handshake();
-  IOOUT = LCD_PCONT|LCD_ENABLE;
+	 HAL_SPI_Init(&hspi1);
+   __HAL_SPI_ENABLE(&hspi1);
 
-	handshake();
-  IOOUT = LCD_CLEAR|LCD_ENABLE;
-	handshake();
-  IOOUT = LCD_EMS|LCD_ENABLE;
+}
 
-	handshake();
+void myLCD_Init(){
+	/*While the SPI data bus is working, this function is not*/
+	// Sends instructions for initializing the LCD unit
+	wait(1520);
+	HC595Write(0x03);
+	wait(1520);
+	HC595Write(0x03);
+	wait(1520);
+	HC595Write(0x03);
+	wait(37);
+	HC595Write(0x02);
+	wait(37);
+	HC595Write(0x02);
+	wait(37);
+	HC595Write(0x08);//N=1, F=0
+	wait(37);
+	HC595Write(0x00);
+	wait(37);
+	HC595Write(0x08);
+	wait(37);
+	HC595Write(0x00);
+	wait(37);
+	HC595Write(0x01);
+	wait(37);
+	HC595Write(0x00);
+	wait(37);
+	HC595Write(0x06); //I/D=1, S=0
+	
+}
 
-  IOOUT = LCD_WRITE|(ALPHA_O_LCD<<8);
-	handshake();
+
+void myTIM6_Init(){
+	/* Enable clock for TIM6 peripheral */
+	// Relevant register: RCC->APB1ENR
+	RCC->APB1ENR |= RCC_APB1RSTR_TIM6RST;
+
+	/* Configure TIM6: buffer auto-reload */
+	/* Enable update events */
+	TIM6->CR1 |= 0x84;
+
+	/* Set clock prescaler value */
+	// Frequency is 12MHz
+	TIM6->PSC = myTIM6_PRESCALER;
 }
 
 #pragma GCC diagnostic pop
